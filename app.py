@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -5,10 +6,14 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "secret"
 
-# Configuration SQLite
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///inscriptions.db"
+# Configuration PostgreSQL via variable d'environnement
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+
+# Création des tables dès le démarrage
+with app.app_context():
+    db.create_all()
 
 # Modèle Inscription
 class Inscription(db.Model):
@@ -35,7 +40,6 @@ def index():
             inscription = Inscription.query.get(matricule)
 
             if not inscription:
-                # Nouvelle inscription avec 1 billet
                 new_inscription = Inscription(matricule=matricule, billets=1)
                 db.session.add(new_inscription)
                 db.session.commit()
@@ -46,7 +50,7 @@ def index():
 
                 flash("Inscription ajoutée avec succès !")
             else:
-                if inscription.billets < 2:  # ✅ Limite fixée à 2 billets
+                if inscription.billets < 2:
                     inscription.billets += 1
                     db.session.commit()
 
@@ -58,10 +62,8 @@ def index():
                 else:
                     flash("Vous ne pouvez plus acheter d'autre billets (max 2) !")
 
-        # 🚀 Correctif PRG : redirection systématique après POST
         return redirect(url_for("index"))
 
-    # Partie GET uniquement
     inscriptions = Inscription.query.all()
     total = sum(i.billets * 1000 for i in inscriptions)
 
@@ -82,7 +84,4 @@ def delete(matricule):
     return redirect(url_for("index"))
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    # ⚠️ Désactiver le reloader automatique pour éviter les doublons
     app.run(debug=False)

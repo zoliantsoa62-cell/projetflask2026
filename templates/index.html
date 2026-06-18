@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des inscriptions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #3498db;
+            color: white;
+        }
+        tr:hover {
+            background: #f1f1f1;
+        }
+        .message {
+            text-align: center;
+            margin-bottom: 15px;
+            color: red;
+            font-weight: bold;
+        }
+        .stats {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎟️ Gestion des inscriptions</h1>
+
+    <!-- Formulaire -->
+    <form method="POST" id="inscriptionForm">
+        <input type="text" name="matricule" placeholder="Matricule" required>
+        <input type="text" name="equipe" placeholder="Nom d'équipe" required>
+        <button type="submit">Acheter billet</button>
+    </form>
+
+    <!-- Messages flash -->
+    <div class="message" id="flashMessage">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              {{ message }}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Tableau des inscriptions -->
+    <table>
+        <tr>
+            <th>Matricule</th>
+            <th>Billets</th>
+            <th>Équipes</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+        {% for i in inscriptions %}
+        <tr>
+            <td>{{ i.matricule }}</td>
+            <td>{{ i.billets }}</td>
+            <td>
+                {% for e in i.equipes %}
+                    {{ e.nom }}<br>
+                {% endfor %}
+            </td>
+            <td>{{ i.date }}</td>
+            <td>
+                <form action="{{ url_for('delete', matricule=i.matricule) }}" method="POST" onsubmit="return confirmDelete('{{ i.matricule }}')">
+                    <button type="submit">🗑️ Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Statistiques -->
+    <div class="stats">
+        <p>Total payé : <strong>{{ total }} Ar</strong></p>
+        <p>Total matricules : <strong>{{ total_matricules }}</strong></p>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Animation pour les messages flash
+        const flashMessage = document.getElementById("flashMessage");
+        if (flashMessage.innerText.trim() !== "") {
+            flashMessage.style.opacity = 1;
+            setTimeout(() => {
+                flashMessage.style.transition = "opacity 1s";
+                flashMessage.style.opacity = 0;
+            }, 3000);
+        }
+
+        // Confirmation avant suppression
+        function confirmDelete(matricule) {
+            return confirm("Voulez-vous vraiment supprimer l'inscription du matricule " + matricule + " ?");
+        }
+    </script>
+</body>
+</html>

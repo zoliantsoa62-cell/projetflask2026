@@ -10,13 +10,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///inscriptions.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
-<<<<<<< HEAD
-=======
-# Création des tables dès le démarrage
-with app.app_context():
-    db.create_all()
-
->>>>>>> e12a7061cbe99eeeb184ad3d50b881f1577d4263
 # Modèle Inscription
 class Inscription(db.Model):
     matricule = db.Column(db.String(50), primary_key=True)

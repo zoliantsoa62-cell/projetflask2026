@@ -1,14 +1,25 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "secret"
 
-# Configuration SQLite
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///inscriptions.db"
+# Identifiants fixes
+USERNAME = "admin"
+PASSWORD = "pronostic26"
+
+# Configuration PostgreSQL
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "postgresql://zo:pczo@localhost/projet_pg"  # ⚡ Fallback local
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # Modèle Inscription
 class Inscription(db.Model):
@@ -23,8 +34,36 @@ class Equipe(db.Model):
     nom = db.Column(db.String(100), nullable=False)
     matricule = db.Column(db.String(50), db.ForeignKey("inscription.matricule"))
 
+# ✅ Création automatique des tables au premier appel
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
+# Routes Login / Logout
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        if username == USERNAME and password == PASSWORD:
+            session["user"] = username
+            return redirect(url_for("index"))
+        else:
+            flash("Identifiants invalides")
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect(url_for("login"))
+
+# Page principale protégée
 @app.route("/", methods=["GET", "POST"])
 def index():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
     if request.method == "POST":
         matricule = request.form.get("matricule")
         equipe_nom = request.form.get("equipe")
@@ -35,7 +74,6 @@ def index():
             inscription = Inscription.query.get(matricule)
 
             if not inscription:
-                # Nouvelle inscription avec 1 billet
                 new_inscription = Inscription(matricule=matricule, billets=1)
                 db.session.add(new_inscription)
                 db.session.commit()
@@ -58,10 +96,8 @@ def index():
                 else:
                     flash("Vous ne pouvez plus acheter d'autre billets (max 2) !")
 
-        # 🚀 Correctif PRG : redirection systématique après POST
         return redirect(url_for("index"))
 
-    # Partie GET uniquement
     inscriptions = Inscription.query.all()
     total = sum(i.billets * 1000 for i in inscriptions)
 
@@ -74,6 +110,9 @@ def index():
 
 @app.route("/delete/<matricule>", methods=["POST"])
 def delete(matricule):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
     inscription = Inscription.query.get(matricule)
     if inscription:
         db.session.delete(inscription)
@@ -82,7 +121,4 @@ def delete(matricule):
     return redirect(url_for("index"))
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    # ⚠️ Désactiver le reloader automatique pour éviter les doublons
     app.run(debug=False)

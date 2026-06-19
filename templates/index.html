@@ -10,9 +10,29 @@
             margin: 0;
             padding: 20px;
         }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
         h1 {
             text-align: center;
             color: #2c3e50;
+            flex: 1;
+        }
+        .logout {
+            text-align: right;
+        }
+        .logout a {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .logout a:hover {
+            background: #c0392b;
         }
         form {
             display: flex;
@@ -66,7 +86,14 @@
     </style>
 </head>
 <body>
-    <h1>🎟️ Gestion des inscriptions</h1>
+    <!-- En-tête avec bouton Déconnexion -->
+    <header>
+        <h1>🎟️ Gestion des inscriptions</h1>
+        <div class="logout">
+            <span>Connecté : {{ session['user'] }}</span>
+            <a href="{{ url_for('logout') }}">Déconnexion</a>
+        </div>
+    </header>
 
     <!-- Formulaire -->
     <form method="POST" id="inscriptionForm">
